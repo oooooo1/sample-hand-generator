@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+
+<!-- 
+---- Optional card images (careful w/ innerHTML)
+---- Copy gatherer color scheme
+---- Make sure it's usable on every screen size (columns eat ea. other...)
+---- Calculate chance of getting certain cards in opening hand, w/ mulligans (separate tab)
+-->
+
+<html>
+  <header>
+    <meta charset="utf-8"></meta>
+    
+    <style>
+      .col {
+        float: left;
+        width: 50%;
+        margin: 2%;
+       }
+      #left-col { width: 25%; }
+      #right-col { width: 65%; }
+      
+      #hand-container {
+        margin-top: 8px;
+        height: 282px;
+        overflow: auto;
+       }
+      
+      .card {
+        width: 90px;
+        height: 125px;
+        border: 1px solid black;
+        border-radius: 5px;
+        float: left;
+        margin: 2px;
+        padding: 3px;
+       }
+       
+      .red-text { color: red; font-weight: bold; }
+      .blue-text { color: blue; font-weight: bold; }
+      .green-text { color: green; font-weight: bold; }
+      .black-text { color: black; font-weight: bold; }
+      .white-text { color: gray; font-weight: bold; }
+      
+      #removed-cards li {
+        display: block;
+        width: 33%;
+        float: left;
+       }
+       
+      #removed-cards:after { /* Clear float after list, so #counter is always on its own line. */
+        content: "";
+        display: table;
+        clear: both;
+       }
+       
+      .counter {
+        height: 20px;
+        width: 40px;
+       }
+    </style>
+  </header>
+  <body>
+    <div class="row">
+      <div id="left-col" class="col">
+      <textarea id="deck-text" rows="18" cols="18">  You can paste your deck here.
+      
+  Any line that doesn't start with a number, or is after the word 'Sideboard', will be ignored.
+
+  (This isn't really related, but you can remove a card from the sample hand to the right by ctrl-clicking it.)
+
+</textarea>
+
+      <div>
+        London Mulligan <input type="checkbox" id="toggle-london-mulligan" checked> <br>
+        Card Images (MTG only) <input type="checkbox" id="toggle-card-images" checked>
+      </div>
+      </div>
+      
+      <div id="right-col" class="col">
+        <div>
+          <button id="shuffle-and-draw" type="button">Shuffle and Draw</button>
+          <button id="mulligan" type="button">Mulligan</button>
+          <button id="draw-card" type="button">Draw Card</button>
+          <text id="cards-left"></text>
+        </div>
+        
+        <div id="hand-container"></div>
+        <ul id="removed-cards"></ul>
+        <input type="number" class="counter" value="0"></input>
+        <input type="number" class="counter" value="0"></input>
+      </div>
+    </div>
+    
+    <!-- Sample decks. -->
+    <script>
+      let sampleDecks = [
+`Man of the Hour [Historic Goblins]
+
+Lands (25)
+21 Mountain
+3 Castle Embereth
+1 Phyrexian Tower
+
+Creatures (35)
+4 Skirk Prospector
+4 Goblin Instigator
+4 Wily Goblin
+3 Conspicuous Snoop
+4 Goblin Matron
+4 Goblin Chieftan
+4 Goblin Warchief
+2 Krenko, Mob Boss
+2 Goblin Ringleader
+4 Muxus, Goblin Grandee
+
+Sideboard
+1 Tormod's Crypt
+4 Lava Coil
+3 Goblin Cratermaker
+2 Fry
+3 Gempalm Incinerator
+2 Goblin Chainwhirler`,
+
+`CLACK BRINGER [ELD Standard]
+
+Land (24)
+5 Swamp
+5 Plains
+4 Godless Shrine
+4 Temple of Silence
+2 Castle Ardenvale
+2 Castle Locthwain
+2 Scoured Barrens
+
+Creatures (20)
+2 Foulmire Knight // Profane Insight
+2 Giant Killer // Chop Down
+4 Hushbringer
+4 Murderous Rider // Swift End
+2 Midnight Reaper
+1 Rankle, Master of Pranks
+4 Clackbridge Troll
+1 Kenrith, the Returned King
+
+Planeswalkers (1)
+1 Liliana, Dreadhorde General
+
+Other (15)
+3 Legion's End
+3 Dawn of Hope
+2 Oath of Kaya
+2 Kaya's Wrath
+3 Conclave Tribunal
+2 Ethereal Absolution`,
+
+`Bogle and the Beast [Modern Gu Hexproof]
+    
+Land (18)
+7 Forest
+2 Pendelhaven
+7 Island
+2 Flooded Grove
+
+Creatures (16)
+4 Gladecover Scout
+4 Slippery Bogle
+4 Mausoleum Wanderer
+4 Lovestruck Beast // Heart's Desire
+
+Other (26)
+4 Spider Umbra
+4 Rancor
+4 Curious Obsession
+4 Arcane Flight
+4 Spectral Flight
+3 Mana Leak
+3 Boar Umbra`,
+
+`Mono Blue Control [Pauper Mono U Control]
+
+Land (22)
+18 Island
+4 Quicksand
+
+Creatures (8)
+4 Delver of Secrets
+4 Spire Golem
+
+Other (30)
+4 Piracy Charm
+4 Preordain
+4 Deprive
+4 Counterspell
+4 Prohibit
+3 Think Twice
+2 Into the Roil
+4 Exclude
+1 Serrated Arrows
+
+Sideboard
+3 Hydroblast
+3 Annul
+2 Piracy Charm
+2 Relic of Progenitus
+2 Curse of Chains
+3 Curse of the Bloody Tome`];
+    </script>
+    
+    <script>
+      let deck = [],
+          hand = [],
+          mulliganCounter = 0;
+      
+      function put(msg) {
+        console.log(msg);
+       }
+       
+      function $id(id) {
+        return document.getElementById(id);
+       }
+    </script>
+    
+    <!-- Parse and shuffle deck. -->
+    <script>
+      function parseDeck() {
+        let rawStr = $id('deck-text').innerHTML,
+            lines = rawStr.split('\n');
+            
+        deck = [];
+        
+        for (let line of lines) {
+          let gap = line.indexOf(' '),
+              copies = line.slice(0, gap),
+              name = line.slice(gap + 1);
+              
+          // A negative gap prevents identification of the sideboard.  
+          if (gap < 0) {
+            copies = line;
+            name = '';
+            }
+          
+          if (copies.toLowerCase().includes('sideboard')) {
+            break;
+            }
+          
+          if (!isNaN(copies)) {
+            for (let i = 0; i < copies; i += 1) {
+              deck.push(name);
+              }
+            }
+         }
+       }
+       
+      function shuffleDeck() { // Durstenfeld
+        for (let i = deck.length - 1; i > 0; i -= 1) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [deck[i], deck[j]] = [deck[j], deck[i]];
+         }
+       }
+       
+      // <button>Shuffle and Draw</button>  
+      $id('shuffle-and-draw').onclick = () => {
+        emptyHand();
+        mulliganCounter = 0;
+        parseDeck();
+        shuffleDeck();
+        draw(7);
+        displayHand();
+        updateCardsLeftInDeck();
+        setRemoveFromHandTrigger();
+        clearBoard();
+       }
+    </script>
+    
+    <!-- Manage sample hand. -->
+    <script>
+      function draw(numCards) {
+        let n = numCards || 1;
+        
+        hand = deck.slice(0, n);
+        deck = deck.slice(n);
+       }
+       
+      // <button>draw-card</button>
+      $id('draw-card').onclick = () => {
+        draw(1);
+        displayHand();
+        updateCardsLeftInDeck();
+        setRemoveFromHandTrigger();
+       }
+       
+      // <button>mulligan</button>
+      $id('mulligan').onclick = () => {
+        mulliganCounter += 1;
+        if (mulliganCounter > 6) {
+          mulliganCounter = 6;
+         }
+         
+        emptyHand();
+        parseDeck();
+        shuffleDeck();
+        
+        // Use London mulligan.
+        if ($id('toggle-london-mulligan').checked) {
+          let targetHandSize = 7 - mulliganCounter
+          
+          draw(7);
+          displayHand();
+          updateCardsLeftToRemove(7 - targetHandSize);
+          
+          // User chooses which cards to drop manually.
+          let cards = $id('hand-container').children;
+          
+          for (let i = 0; i < cards.length; i += 1) {
+            let card = cards[i];
+            
+            card.onclick = () => {
+              // List is always being updated, have to check where element is each time.
+              for (let j = 0; j < cards.length; j += 1) {
+                let currCard = cards[j];
+                
+                if (card == currCard) {
+                  deck.push(card.innerHTML); // place card on bottom of deck
+                  cards[j].remove();
+                  hand.splice(j, 1); // update js representation as well
+                  }
+                }
+                
+              // Only want to remove so many cards.
+              if (cards.length <= targetHandSize) {
+                updateCardsLeftInDeck();
+                setRemoveFromHandTrigger(); // this also removes the old onclick
+                clearBoard();
+                }
+              else {
+                updateCardsLeftToRemove(hand.length - targetHandSize);
+                }
+              }
+            }
+         }
+        // Regular mulligan.
+        else {
+          draw(7 - mulliganCounter);
+          displayHand();
+          updateCardsLeftInDeck();
+          setRemoveFromHandTrigger();
+          clearBoard();
+         }
+       }
+    </script>
+    
+    <!-- Calculate the chances of a certain hand. -->
+    <script>
+    </script>
+    
+    <!-- Rudimentary board simulator. -->
+    <script>
+      function addToBoard(card) {
+        let name = card.innerHTML,
+            boardContainer = $id('removed-cards')
+            board = boardContainer.children;
+            
+        function addNew() {
+          let newEl = document.createElement('li');
+          newEl.innerHTML = '1 ' + name;
+          
+          boardContainer.appendChild(newEl);
+         }
+         
+         if (board.length > 0) { // not already on board
+          let added = false;
+          
+          for (let el of board) {
+            let num = el.innerHTML.split(' ')[0],
+                elName = el.innerHTML.split(' ')[1];
+              
+            if (elName == name) {
+              // If a card with the same name is already on the board, stack them.
+              el.innerHTML = (parseInt(num) + 1) + ' ' + elName;
+              added = true;
+              break;
+             }
+            }
+            
+          if (!added) {
+            addNew();
+           }
+          }
+         else {
+          addNew();
+          }
+       }
+    
+      function clearBoard() {
+        $id('removed-cards').innerHTML = '';
+       }
+    
+      function setRemoveFromHandTrigger() {
+        let cards = $id('hand-container').children;
+        
+        for (let card of cards) {
+          card.onclick = (event) => {
+            // List is always being updated, have to check where element is each time.
+            for (let i = 0; i < cards.length; i += 1) {
+              let currCard = cards[i];
+            
+              // Only send card to board on ctrl click, to avoid accidents;
+              if (event.ctrlKey && card == currCard) {
+                // Remove card from hand, and update js representation.
+                cards[i].remove();
+                hand.splice(i, 1);
+                
+                // Send card to board.
+                addToBoard(card);
+                }
+              }
+            }
+         }
+       }
+    </script>
+    
+    <!-- Graphics. -->
+    <script>
+      function displayCard(name) {
+        let handContainer = $id('hand-container');
+      
+        let card = document.createElement('div');
+        card.innerHTML = name;
+        card.setAttribute('class', 'card');
+        
+        // Highlight land names.
+        if ((['Mountain', 'Castle Embereth'
+                ]).includes(name)) {
+          card.classList.add('red-text');
+         }
+        else if ((['Island', 'Flooded Grove'
+                ]).includes(name)) {
+          card.classList.add('blue-text');
+         }
+        else if ((['Forest', 'Pendelhaven'
+                ]).includes(name)) {
+          card.classList.add('green-text');
+         }
+        else if ((['Swamp', 'Castle Locthwain', 'Phyrexian Tower'
+                ]).includes(name)) {
+          card.classList.add('black-text');
+         }
+        else if ((['Plains', 'Castle Ardenvale', 'Godless Shrine', 'Temple of Silence'
+                ]).includes(name)) {
+          card.classList.add('white-text');
+         }
+        
+        handContainer.appendChild(card);
+       }
+       
+      function displayHand() {
+        for (let card of hand) {
+          displayCard(card);
+         }
+       }
+       
+      function emptyHand() {
+        let handContainer = $id('hand-container');
+        
+        while (handContainer.firstChild) {
+          handContainer.removeChild(handContainer.lastChild);
+         }
+       }
+       
+       // Show how many cards are left in the deck.
+       function updateCardsLeftInDeck() {
+        $id('cards-left').innerHTML = '(' + deck.length + ') cards in deck'
+        }
+       
+       // How many cards need to be removed from hand? For London Mulligan.
+       function updateCardsLeftToRemove(n) {
+        $id('cards-left').innerHTML = 'London Mulligan: Click to remove (' + n + ') more cards'
+        }
+    </script>
+    
+    <script>
+      // Set random sample deck.
+      let example = sampleDecks[Math.floor(Math.random() * sampleDecks.length)];
+      
+      $id('deck-text').innerHTML += example;
+      parseDeck();
+      
+      // Shuffle and take a hand.
+      shuffleDeck();
+      draw(7);
+      
+      displayHand();
+      updateCardsLeftInDeck();
+      setRemoveFromHandTrigger();
+      clearBoard();
+    </script>
+  </body>
+</html>
