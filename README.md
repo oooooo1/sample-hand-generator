@@ -6,4 +6,4 @@ Features
 - London Mulligan
 - Combo Calculator - find the odds of drawing specific cards
 
-Designed with Magic: The Gathering in mind, but works about as well for other games.
+Made with Magic: The Gathering in mind, but works about as well for other games.
