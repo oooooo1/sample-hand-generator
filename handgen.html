@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 
 <!-- 
----- Optional card images (careful w/ innerHTML)
----- Copy gatherer color scheme
----- Make sure it's usable on every screen size (columns eat ea. other...)
----- Calculate chance of getting certain cards in opening hand, w/ mulligans (separate tab)
+---- Add/Remove combo els, number of mulligans + type of mulligan, starting hand size
+---- Calculate chance of getting certain cards in opening hand, w/ mulligans
+---- pretty tabs: https://fdossena.com/?p=html5cool/buttons/i.frag
 -->
 
 <html>
@@ -12,13 +11,41 @@
     <meta charset="utf-8"></meta>
     
     <style>
+      body {
+        font-size: small;
+       }
+    
+      .row {
+        margin-top: -10px;
+       }
+       
       .col {
         float: left;
         width: 50%;
-        margin: 2%;
+        margin: 0 2% 2% 0;
        }
-      #left-col { width: 25%; }
+      #left-col {
+        width: 30%;
+       }
       #right-col { width: 65%; }
+      
+      #deck-text {
+        font-size: small;
+        max-width: 100%;
+       }
+       
+      #options {
+        font-size: medium;
+       }
+       
+      .sample-hand-button {
+        margin-right: 10px;
+       }
+       
+      #cards-left {
+        font-size: medium;
+        margin-left: 10px;
+       }
       
       #hand-container {
         margin-top: 8px;
@@ -37,7 +64,7 @@
        }
        
       .red-text { color: red; font-weight: bold; }
-      .blue-text { color: blue; font-weight: bold; }
+      .blue-text { color: #3498db; font-weight: bold; }
       .green-text { color: green; font-weight: bold; }
       .black-text { color: black; font-weight: bold; }
       .white-text { color: gray; font-weight: bold; }
@@ -54,6 +81,33 @@
         clear: both;
        }
        
+       #combo-calculator-tab {
+        display: none;
+        }
+        
+       .combo-el {
+        margin: 2px 4px 4px 4px;
+        width: 70%;
+        }
+        
+       #add-combo-element {
+        margin: 2px 0 6px 0;
+        }
+        
+       #display-odds {
+        margin: 2px 0 36px 0;
+        font-size: small;
+        }
+        
+       .display-odds-large {
+        font-size: medium;
+        }
+        
+       .display-odds-chance {
+        font-size: x-large;
+        margin-left: 5px;
+        }
+       
       .counter {
         height: 20px;
         width: 40px;
@@ -61,34 +115,59 @@
     </style>
   </header>
   <body>
+    <h1 id="title">Sample Hand Generator</h1>
+  
     <div class="row">
       <div id="left-col" class="col">
-      <textarea id="deck-text" rows="18" cols="18">  You can paste your deck here.
+        <textarea id="deck-text" rows="26" cols="24" spellcheck="false">  You can paste your deck here.
       
-  Any line that doesn't start with a number, or is after the word 'Sideboard', will be ignored.
-
-  (This isn't really related, but you can remove a card from the sample hand to the right by ctrl-clicking it.)
+  Any line that doesn't start with a number, or is after the word 'Sideboard', will be ignored. Also, you can remove a card from the sample hand to the right by ctrl-clicking it.
 
 </textarea>
 
-      <div>
-        London Mulligan <input type="checkbox" id="toggle-london-mulligan" checked> <br>
-        Card Images (MTG only) <input type="checkbox" id="toggle-card-images" checked>
-      </div>
+        <div id="options">
+          Starting hand size: <input type="number" id="starting-hand-size" class="counter" value="7"></input><br>
+          Use London Mulligan: <input type="checkbox" id="toggle-london-mulligan" checked> <br>
+        </div>
       </div>
       
       <div id="right-col" class="col">
-        <div>
-          <button id="shuffle-and-draw" type="button">Shuffle and Draw</button>
-          <button id="mulligan" type="button">Mulligan</button>
-          <button id="draw-card" type="button">Draw Card</button>
-          <text id="cards-left"></text>
+        <div id="tabs">
+          <button id="sample-hand-link">Sample Hand</button>
+          <button id="combo-calculator-link">Combo Odds</button>
+        </div>
+      
+        <div id="sample-hand-tab">
+          <div>
+            <button id="shuffle-and-draw" class="sample-hand-button" type="button">Shuffle and Draw</button>
+            <button id="mulligan" class="sample-hand-button" type="button">Mulligan</button>
+            <button id="draw-card" class="sample-hand-button" type="button">Draw Card</button>
+            <text id="cards-left"></text>
+          </div>
+          
+          <div id="hand-container"></div>
+          <ul id="removed-cards"></ul>
         </div>
         
-        <div id="hand-container"></div>
-        <ul id="removed-cards"></ul>
-        <input type="number" class="counter" value="0"></input>
-        <input type="number" class="counter" value="0"></input>
+        <div id="combo-calculator-tab">
+          <div id="combo-els">
+            <input type="number" id="slot1No" class="counter" value="1"></input>
+              <input type="text" id="slot1Str" class="combo-el"></input>
+              <button>x</button>
+              <br>
+              
+            <input type="number" id="slot2No" class="counter" value="1"></input>
+              <input type="text" id="slot2Str" class="combo-el"></input>
+              <button>x</button>
+              <br>
+          </div>
+          
+          <button id="add-combo-element">Add</button><br>
+          <button id="calculate-odds">Calculate Odds</button>
+          <div id="display-odds"></div>
+        </div>
+        
+        <input type="number" id="counter" class="counter" value="0"></input>
       </div>
     </div>
     
@@ -96,7 +175,6 @@
     <script>
       let sampleDecks = [
 `Man of the Hour [Historic Goblins]
-
 Lands (25)
 21 Mountain
 3 Castle Embereth
@@ -120,10 +198,11 @@ Sideboard
 3 Goblin Cratermaker
 2 Fry
 3 Gempalm Incinerator
-2 Goblin Chainwhirler`,
+2 Goblin Chainwhirler
+
+https://mtgazone.com/historic-goblins-deck-guide/`,
 
 `CLACK BRINGER [ELD Standard]
-
 Land (24)
 5 Swamp
 5 Plains
@@ -152,10 +231,11 @@ Other (15)
 2 Oath of Kaya
 2 Kaya's Wrath
 3 Conclave Tribunal
-2 Ethereal Absolution`,
+2 Ethereal Absolution
+
+https://themanabase.com/mtg-jeff-clack-bringer-orzhov-clackbridge-troll-hushbringer-deck-in-eld-standard/`,
 
 `Bogle and the Beast [Modern Gu Hexproof]
-    
 Land (18)
 7 Forest
 2 Pendelhaven
@@ -178,7 +258,6 @@ Other (26)
 3 Boar Umbra`,
 
 `Mono Blue Control [Pauper Mono U Control]
-
 Land (22)
 18 Island
 4 Quicksand
@@ -204,7 +283,9 @@ Sideboard
 2 Piracy Charm
 2 Relic of Progenitus
 2 Curse of Chains
-3 Curse of the Bloody Tome`];
+3 Curse of the Bloody Tome
+
+https://mtgdecks.net/Pauper/mono-blue-control-decklist-by-magister-1993-914017`];
     </script>
     
     <script>
@@ -265,7 +346,7 @@ Sideboard
         mulliganCounter = 0;
         parseDeck();
         shuffleDeck();
-        draw(7);
+        draw(startingHandSize());
         displayHand();
         updateCardsLeftInDeck();
         setRemoveFromHandTrigger();
@@ -275,6 +356,10 @@ Sideboard
     
     <!-- Manage sample hand. -->
     <script>
+      function startingHandSize() {
+        return $id('starting-hand-size').value;
+       }
+    
       function draw(numCards) {
         let n = numCards || 1;
         
@@ -305,7 +390,7 @@ Sideboard
         if ($id('toggle-london-mulligan').checked) {
           let targetHandSize = 7 - mulliganCounter
           
-          draw(7);
+          draw(startingHandSize());
           displayHand();
           updateCardsLeftToRemove(7 - targetHandSize);
           
@@ -341,17 +426,13 @@ Sideboard
          }
         // Regular mulligan.
         else {
-          draw(7 - mulliganCounter);
+          draw(startingHandSize() - mulliganCounter);
           displayHand();
           updateCardsLeftInDeck();
           setRemoveFromHandTrigger();
           clearBoard();
          }
        }
-    </script>
-    
-    <!-- Calculate the chances of a certain hand. -->
-    <script>
     </script>
     
     <!-- Rudimentary board simulator. -->
@@ -420,6 +501,44 @@ Sideboard
        }
     </script>
     
+    <!-- Calculate the chances of getting certain combinations of cards in a hand. -->
+    <script>
+      // The hand odds calculator is in a separate tab from the rest of the page.
+      $id('sample-hand-link').onclick = (e) => {
+        $id('sample-hand-tab').style.display = 'block';
+        $id('combo-calculator-tab').style.display = 'none';
+        
+        e.preventDefault();
+        return false;
+       }
+       
+      $id('combo-calculator-link').onclick = (e) => {
+        $id('sample-hand-tab').style.display = 'none';
+        $id('combo-calculator-tab').style.display = 'block';
+        
+        e.preventDefault();
+        return false;
+       }
+       
+      function calculateOdds() {
+        return 0;
+       }
+       
+      function getComboArgs() {
+        let els = $id('combo-els').children,
+            args = [];
+       
+        for (let i = 0; i < els.length; i += 4) {
+          let num = els[i].value,
+              cards = els[i+1].value.split('[or]');
+              
+          args.push([num, cards]);
+         }
+         
+        return args;
+       }
+    </script>
+    
     <!-- Graphics. -->
     <script>
       function displayCard(name) {
@@ -475,20 +594,108 @@ Sideboard
        
        // How many cards need to be removed from hand? For London Mulligan.
        function updateCardsLeftToRemove(n) {
-        $id('cards-left').innerHTML = 'London Mulligan: Click to remove (' + n + ') more cards'
+        $id('cards-left').innerHTML = 'Mulligan: Click to remove (' + n + ') cards'
         }
+        
+      // Initialize hand odds calculator - set up an example query so users can see how it works.
+      function initHandOddsCalculator(sampleDeckNo) {
+        let slot1No = 1,
+            slot2No = 1,
+            slot1Str = '',
+            slot2Str = '';
+      
+        if (sampleDeckNo == 0) {  // Historic Goblins
+          slot1No = 3;
+          slot1Str = 'Mountain[or]Castle Embereth[or]Phyrexian Tower';
+          
+          slot2No = 2;
+          slot2Str = 'Skirk Prospector[or]Goblin Instigator[or]Wily Goblin[or]Conspicuous Snoop';
+         }
+        else if (sampleDeckNo == 1) { // CLACK BRINGER
+          slot1No = 3;
+          slot1Str = 'Swamp[or]Plains[or]Godless Shrine[or]Temple of Silence';
+          
+          slot2No = 2;
+          slot2Str = 'Foulmire Knight // Profane Insight[or]Hushbringer';
+         }
+        else if (sampleDeckNo == 2) { // Gu Bogles
+          slot1No = 2;
+          slot1Str = 'Forest[or]Pendelhaven[or]Island[or]Flooded Grove';
+          
+          slot2No = 1;
+          slot2Str = 'Slippery Bogle[or]Gladecover Scout';
+         }
+        else if (sampleDeckNo == 3) { // Mono U Control
+          slot1No = 3;
+          slot1Str = 'Island[or]Quicksand';
+          
+          slot2No = 1;
+          slot2Str = 'Delver of Secrets[or]Spire Golem';
+         }
+         
+        $id('slot1No').value = slot1No;
+        $id('slot1Str').value = slot1Str;
+        $id('slot2No').value = slot2No;
+        $id('slot2Str').value = slot2Str;
+         
+        displayOdds();
+       }
+       
+      function displayOdds() {
+        let args = getComboArgs(),
+            chance = calculateOdds(),
+            innerHTML = '<span class="display-odds-large">The chance of drawing</span><br><br>';
+      
+        for (let i = 0; i < args.length; i += 1) {
+          let n = args[i][0],
+              cardsArr = args[i][1],
+              cards = '';
+              
+          // Convert cards to string - toString() would be naive b/c some card names contain commas.
+          for (let c = 0; c < cardsArr.length; c += 1) {
+            let cardName = cardsArr[c];
+          
+            if (c !== 0) {
+              cards += ' or ';
+              }
+          
+            cards += '<strong>' + cardName + '</strong>';
+            }
+            
+          if (i !== 0) {
+            innerHTML += 'and<br>';
+           }
+             
+          let indent = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;',
+              copies = 'copies';
+              
+          if (n === '1') { copies = 'copy'; }
+          
+          innerHTML += indent + '<strong>(' + n + ')</strong>' + ' ' + copies + ' of ' + cards + '<br>'
+         }
+         
+        innerHTML += '<br><span class="display-odds-large">from a starting hand of ' + startingHandSize() + ' cards<br>';
+        innerHTML += 'is </span><span class="display-odds-chance">' + chance + '%</span>';
+        
+        $id('display-odds').innerHTML = innerHTML;
+       }
     </script>
     
     <script>
       // Set random sample deck.
-      let example = sampleDecks[Math.floor(Math.random() * sampleDecks.length)];
+      let exampleNo = Math.floor(Math.random() * sampleDecks.length),
+          example = sampleDecks[exampleNo];
       
-      $id('deck-text').innerHTML += example;
+      $id('deck-text').innerHTML += example; // set textarea
       parseDeck();
+      initHandOddsCalculator(exampleNo); // set up hand odds example
+      
+      // Reset counter.
+      $id('counter').value = 0;
       
       // Shuffle and take a hand.
       shuffleDeck();
-      draw(7);
+      draw(startingHandSize());
       
       displayHand();
       updateCardsLeftInDeck();
