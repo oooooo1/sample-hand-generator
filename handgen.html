@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 
-<!-- 
----- Add/Remove combo els, number of mulligans + type of mulligan, starting hand size
----- Calculate chance of getting certain cards in opening hand, w/ mulligans
----- pretty tabs: https://fdossena.com/?p=html5cool/buttons/i.frag
+<!--
+- is my math right? 1r&1b
+  - 0 matches doesn't give 0%...
+- mulligans
 -->
 
 <html>
@@ -13,45 +13,60 @@
     <style>
       body {
         font-size: small;
-       }
+      }
     
       .row {
         margin-top: -10px;
-       }
+      }
        
       .col {
         float: left;
         width: 50%;
         margin: 0 2% 2% 0;
-       }
-      #left-col {
-        width: 30%;
-       }
+      }
+      #left-col { width: 30%; }
       #right-col { width: 65%; }
       
       #deck-text {
-        font-size: small;
+        width: 100%;
         max-width: 100%;
-       }
+      }
        
       #options {
         font-size: medium;
-       }
+      }
+      
+      button {
+        border: 1px dotted gray;
+        font-size: medium;
+        padding: 0.2em;
+        margin-top: 0.2em;
+      }
+      
+      .tab-button {
+        border: none;
+        padding: 0.2em;
+      }
+      
+      .tab-button[data-selected-tab="true"] {
+        border: none;
+        background-color: white;
+      }
        
       .sample-hand-button {
         margin-right: 10px;
-       }
+      }
        
       #cards-left {
         font-size: medium;
         margin-left: 10px;
-       }
+      }
       
       #hand-container {
         margin-top: 8px;
         height: 282px;
         overflow: auto;
-       }
+      }
       
       .card {
         width: 90px;
@@ -61,81 +76,84 @@
         float: left;
         margin: 2px;
         padding: 3px;
-       }
+      }
        
       .red-text { color: red; font-weight: bold; }
       .blue-text { color: #3498db; font-weight: bold; }
       .green-text { color: green; font-weight: bold; }
       .black-text { color: black; font-weight: bold; }
-      .white-text { color: gray; font-weight: bold; }
+      .white-text { color: dimgrey; font-weight: bold; }
       
       #removed-cards li {
         display: block;
         width: 33%;
         float: left;
-       }
+      }
        
       #removed-cards:after { /* Clear float after list, so #counter is always on its own line. */
         content: "";
         display: table;
         clear: both;
-       }
+      }
        
-       #combo-calculator-tab {
+      #combo-calculator-tab {
         display: none;
-        }
+      }
         
-       .combo-el {
-        margin: 2px 4px 4px 4px;
+      .combo-el {
+        margin: 6px 4px 2px 6px;
         width: 70%;
-        }
+      }
         
-       #add-combo-element {
+      #add-combo-element {
         margin: 2px 0 6px 0;
-        }
+      }
         
-       #display-odds {
+      #calculate-odds {
+        margin-top: 10px;
+      }
+        
+      #display-odds {
         margin: 2px 0 36px 0;
         font-size: small;
-        }
+      }
         
-       .display-odds-large {
+      .display-odds-large {
         font-size: medium;
-        }
+      }
         
-       .display-odds-chance {
+      .display-odds-chance {
         font-size: x-large;
         margin-left: 5px;
-        }
+      }
        
       .counter {
         height: 20px;
         width: 40px;
-       }
+      }
     </style>
   </header>
   <body>
     <h1 id="title">Sample Hand Generator</h1>
   
+  
     <div class="row">
       <div id="left-col" class="col">
-        <textarea id="deck-text" rows="26" cols="24" spellcheck="false">  You can paste your deck here.
-      
-  Any line that doesn't start with a number, or is after the word 'Sideboard', will be ignored. Also, you can remove a card from the sample hand to the right by ctrl-clicking it.
-
-</textarea>
+        <textarea id="deck-text" rows="26" cols="24" spellcheck="false"></textarea>
 
         <div id="options">
-          Starting hand size: <input type="number" id="starting-hand-size" class="counter" value="7"></input><br>
-          Use London Mulligan: <input type="checkbox" id="toggle-london-mulligan" checked> <br>
+          Starting hand size: <input type="number" id="starting-hand-size" class="counter" value="7" min="0"></input><br>
+          Use London Mulligan: <input type="checkbox" id="toggle-london-mulligan" checked><br>
         </div>
       </div>
       
       <div id="right-col" class="col">
+        <!--
         <div id="tabs">
-          <button id="sample-hand-link">Sample Hand</button>
-          <button id="combo-calculator-link">Combo Odds</button>
+          <button id="sample-hand-link" class="tab-button" data-selected-tab="true">Sample Hand</button>
+          <button id="combo-calculator-link" class="tab-button">Combo Odds</button>
         </div>
+        -->
       
         <div id="sample-hand-tab">
           <div>
@@ -147,150 +165,63 @@
           
           <div id="hand-container"></div>
           <ul id="removed-cards"></ul>
+          <input type="number" id="counter" class="counter" value="0"></input>
         </div>
         
         <div id="combo-calculator-tab">
-          <div id="combo-els">
-            <input type="number" id="slot1No" class="counter" value="1"></input>
-              <input type="text" id="slot1Str" class="combo-el"></input>
-              <button>x</button>
-              <br>
-              
-            <input type="number" id="slot2No" class="counter" value="1"></input>
-              <input type="text" id="slot2Str" class="combo-el"></input>
-              <button>x</button>
-              <br>
-          </div>
-          
+          <div id="combo-els"></div>
           <button id="add-combo-element">Add</button><br>
+          Starting hand size: <input type="number" id="starting-hand-size2" class="counter" value="7" min="0"></input>
+          Max mulligans: <input type="number" id="max-mulligans" class="counter" value="0" min="0"></input>
+          Use London Mulligan: <input type="checkbox" id="toggle-london-mulligan2" checked><br>
+          
           <button id="calculate-odds">Calculate Odds</button>
           <div id="display-odds"></div>
         </div>
-        
-        <input type="number" id="counter" class="counter" value="0"></input>
       </div>
     </div>
     
     <!-- Sample decks. -->
     <script>
-      let sampleDecks = [
-`Man of the Hour [Historic Goblins]
-Lands (25)
-21 Mountain
-3 Castle Embereth
-1 Phyrexian Tower
+      let sampleDeck = `/You can paste your deck here.
+      
+Any line that doesn't start with a number, or is after the word 'Sideboard', will be ignored.
 
-Creatures (35)
-4 Skirk Prospector
-4 Goblin Instigator
-4 Wily Goblin
-3 Conspicuous Snoop
-4 Goblin Matron
-4 Goblin Chieftan
-4 Goblin Warchief
-2 Krenko, Mob Boss
-2 Goblin Ringleader
-4 Muxus, Goblin Grandee
-
-Sideboard
-1 Tormod's Crypt
-4 Lava Coil
-3 Goblin Cratermaker
-2 Fry
-3 Gempalm Incinerator
-2 Goblin Chainwhirler
-
-https://mtgazone.com/historic-goblins-deck-guide/`,
-
-`CLACK BRINGER [ELD Standard]
+Mono Green
 Land (24)
-5 Swamp
-5 Plains
-4 Godless Shrine
-4 Temple of Silence
-2 Castle Ardenvale
-2 Castle Locthwain
-2 Scoured Barrens
+24 Forest
 
-Creatures (20)
-2 Foulmire Knight // Profane Insight
-2 Giant Killer // Chop Down
-4 Hushbringer
-4 Murderous Rider // Swift End
-2 Midnight Reaper
-1 Rankle, Master of Pranks
-4 Clackbridge Troll
-1 Kenrith, the Returned King
+Creature (22)
+4 Elvish Mystic
+4 Elvish Visionary
+4 Kalonian Tusker
+2 Wood Elves
+2 Drove of Elves
+2 Garruk's Packleader
+3 Archweaver
+1 Force of Nature
 
-Planeswalkers (1)
-1 Liliana, Dreadhorde General
+Instant (3)
+3 Giant Growth
 
-Other (15)
-3 Legion's End
-3 Dawn of Hope
-2 Oath of Kaya
-2 Kaya's Wrath
-3 Conclave Tribunal
-2 Ethereal Absolution
+Sorcery (7)
+4 Explore
+3 Prey Upon
 
-https://themanabase.com/mtg-jeff-clack-bringer-orzhov-clackbridge-troll-hushbringer-deck-in-eld-standard/`,
-
-`Bogle and the Beast [Modern Gu Hexproof]
-Land (18)
-7 Forest
-2 Pendelhaven
-7 Island
-2 Flooded Grove
-
-Creatures (16)
-4 Gladecover Scout
-4 Slippery Bogle
-4 Mausoleum Wanderer
-4 Lovestruck Beast // Heart's Desire
-
-Other (26)
-4 Spider Umbra
-4 Rancor
-4 Curious Obsession
-4 Arcane Flight
-4 Spectral Flight
-3 Mana Leak
-3 Boar Umbra`,
-
-`Mono Blue Control [Pauper Mono U Control]
-Land (22)
-18 Island
-4 Quicksand
-
-Creatures (8)
-4 Delver of Secrets
-4 Spire Golem
-
-Other (30)
-4 Piracy Charm
-4 Preordain
-4 Deprive
-4 Counterspell
-4 Prohibit
-3 Think Twice
-2 Into the Roil
-4 Exclude
-1 Serrated Arrows
+Enchantment (4)
+4 Wild Growth
 
 Sideboard
-3 Hydroblast
-3 Annul
-2 Piracy Charm
-2 Relic of Progenitus
-2 Curse of Chains
-3 Curse of the Bloody Tome
+4 Arbor Elf
+4 Fog
+4 Leatherback Baloth
+3 Gigantosaurus
 
-https://mtgdecks.net/Pauper/mono-blue-control-decklist-by-magister-1993-914017`];
+https://tappedout.net/mtg-decks/budget-beginner-teaching-decks-1-green/`;
     </script>
     
     <script>
-      let deck = [],
-          hand = [],
+      let hand = [],
           mulliganCounter = 0;
       
       function put(msg) {
@@ -300,15 +231,22 @@ https://mtgdecks.net/Pauper/mono-blue-control-decklist-by-magister-1993-914017`]
       function $id(id) {
         return document.getElementById(id);
        }
+       
+      function anyEq(x, arr) {
+        for (let el of arr) {
+          if (x === el) {
+            return true;
+            }
+          }
+       }
     </script>
     
     <!-- Parse and shuffle deck. -->
     <script>
       function parseDeck() {
-        let rawStr = $id('deck-text').innerHTML,
-            lines = rawStr.split('\n');
-            
-        deck = [];
+        let rawStr = $id('deck-text').value,
+            lines = rawStr.split('\n'),
+            deck = [];
         
         for (let line of lines) {
           let gap = line.indexOf(' '),
@@ -331,6 +269,8 @@ https://mtgdecks.net/Pauper/mono-blue-control-decklist-by-magister-1993-914017`]
               }
             }
          }
+         
+        return deck;
        }
        
       function shuffleDeck() { // Durstenfeld
@@ -344,7 +284,7 @@ https://mtgdecks.net/Pauper/mono-blue-control-decklist-by-magister-1993-914017`]
       $id('shuffle-and-draw').onclick = () => {
         emptyHand();
         mulliganCounter = 0;
-        parseDeck();
+        deck = parseDeck();
         shuffleDeck();
         draw(startingHandSize());
         displayHand();
@@ -383,7 +323,8 @@ https://mtgdecks.net/Pauper/mono-blue-control-decklist-by-magister-1993-914017`]
          }
          
         emptyHand();
-        parseDeck();
+        clearBoard();
+        deck = parseDeck();
         shuffleDeck();
         
         // Use London mulligan.
@@ -447,7 +388,7 @@ https://mtgdecks.net/Pauper/mono-blue-control-decklist-by-magister-1993-914017`]
           newEl.innerHTML = '1 ' + name;
           
           boardContainer.appendChild(newEl);
-         }
+        }
          
          if (board.length > 0) { // not already on board
           let added = false;
@@ -486,27 +427,33 @@ https://mtgdecks.net/Pauper/mono-blue-control-decklist-by-magister-1993-914017`]
             for (let i = 0; i < cards.length; i += 1) {
               let currCard = cards[i];
             
-              // Only send card to board on ctrl click, to avoid accidents;
-              if (event.ctrlKey && card == currCard) {
-                // Remove card from hand, and update js representation.
+              if (card == currCard) {
+                // Remove card from hand.
                 cards[i].remove();
                 hand.splice(i, 1);
                 
-                // Send card to board.
-                addToBoard(card);
+                // If the ctrl key is pressed, remove from the game completely.
+                if (!event.ctrlKey) {
+                  addToBoard(card);
                 }
               }
             }
-         }
-       }
+          }
+        }
+      }
     </script>
     
     <!-- Calculate the chances of getting certain combinations of cards in a hand. -->
     <script>
       // The hand odds calculator is in a separate tab from the rest of the page.
       $id('sample-hand-link').onclick = (e) => {
+        // Switch tabs.
         $id('sample-hand-tab').style.display = 'block';
         $id('combo-calculator-tab').style.display = 'none';
+        
+        // Swap active button.
+        $id('sample-hand-link').setAttribute('data-selected-tab', 'true');
+        $id('combo-calculator-link').removeAttribute('data-selected-tab');
         
         e.preventDefault();
         return false;
@@ -516,12 +463,50 @@ https://mtgdecks.net/Pauper/mono-blue-control-decklist-by-magister-1993-914017`]
         $id('sample-hand-tab').style.display = 'none';
         $id('combo-calculator-tab').style.display = 'block';
         
+        $id('sample-hand-link').removeAttribute('data-selected-tab');
+        $id('combo-calculator-link').setAttribute('data-selected-tab', 'true');
+        
         e.preventDefault();
         return false;
        }
        
-      function calculateOdds() {
-        return 0;
+       // <button>Add</button>
+      $id('add-combo-element').onclick = () => {
+        let noInput = document.createElement('input'),
+            textInput = document.createElement('input'),
+            closeBtn = document.createElement('button'),
+            br = document.createElement('br'),
+            container = $id('combo-els');
+            
+        noInput.type = 'number';
+        noInput.value = '1';
+        noInput.min = '0';
+        noInput.classList.add('counter');
+        
+        textInput.type = 'text';
+        textInput.classList.add('combo-el');
+            
+        closeBtn.innerHTML = 'x';
+        // Remove element when they click on the x.
+        closeBtn.onclick = () => {
+          let els = container.children;
+        
+          for (let i = 0; i < els.length; i += 4) {
+            let x = els[i+2];
+            
+            if (closeBtn === x) {
+              container.removeChild(els[i+3]);
+              container.removeChild(els[i+2]);
+              container.removeChild(els[i+1]);
+              container.removeChild(els[i]);
+              }
+            }
+         }
+        
+        container.appendChild(noInput);
+        container.appendChild(textInput);
+        container.appendChild(closeBtn);
+        container.appendChild(br);
        }
        
       function getComboArgs() {
@@ -529,45 +514,202 @@ https://mtgdecks.net/Pauper/mono-blue-control-decklist-by-magister-1993-914017`]
             args = [];
        
         for (let i = 0; i < els.length; i += 4) {
-          let num = els[i].value,
-              cards = els[i+1].value.split('[or]');
-              
-          args.push([num, cards]);
+          let n = els[i].value,
+              cards = els[i+1].value;
+            
+          // Ignore empty slots.
+          if (cards !== '') {
+            args.push([parseInt(n), cards.split('[or]')]);
+           }
          }
          
         return args;
+       }
+       
+      function getComboHandSize() {
+        return $id('starting-hand-size2').value;
+       }
+       
+      function getComboMulligans() {
+        return $id('max-mulligans').value;
+       }
+       
+      function getComboIsLondon() {
+        return $id('toggle-london-mulligan').checked;
+       }
+       
+      // Find how many cards of a certain name are in the deck.
+      function getMatches(cards) {
+        let deck = parseDeck(),
+            matches = 0;
+            
+        for (let card of deck) {
+          if (anyEq(card, cards)) {
+            matches += 1;
+           }
+         }
+         
+        return matches;
+       }
+       
+       // x * (x - 1) * (x - 2) * ... * 1
+      function factorial(x) {
+        let fac = 1;
+        
+        for (let a = x; a > 0; a -= 1) {
+          fac *= a;
+         }
+         
+        return fac;
+       }
+       
+       // x choose y
+      function choose(x, y) {
+        return factorial(x) / (factorial(y) * factorial(x - y));
+       }
+       
+      // Given an array of integers, returns every possible permutation containing integers below
+      // each slot's value.
+       // [2, 2] => [[1, 1], [1, 0], [0, 1], [0, 0]]
+      function permutation(arr) {
+        let acc = [];
+      
+        function r(currIndex, permutation) {
+          let n = arr[currIndex];
+              
+          for (let i = n-1; i >= 0; i -= 1) {
+            let p = [];
+            if (permutation) {
+              p = permutation.slice();
+              }
+            p.push(i);
+            
+            if (arr[currIndex+1]) {
+              r(currIndex+1, p.slice());
+              }
+            else {
+              acc.push(p);//is p continuing?
+              }
+            }
+         }
+        r(0);
+         
+        return acc;
+       }
+       
+      function handChance(handSize) {
+        let args = getComboArgs(),
+            maxHandSize = handSize || getComboHandSize(),
+            deck = parseDeck()
+            a = 0,
+            b = 0;
+        // We can find the chance of drawing a certain combination of cards by finding 1 - a + b,
+        // where a = the sum of the chance of drawing exactly all quantities of a desired card below
+        // the goal quantity
+        // where b = the sum of the chance of drawing multiple quantites of different desired cards
+        // below the goal quantity (if we want two of x and y, 1 of x and 0 of y would fall here),
+        // to avoid counting it multiple times
+        
+        for (let pair of args) { // a
+          let n = pair[0]
+              cards = pair[1],
+              matches = getMatches(cards);
+          
+          for (let i = n-1; i >= 0; i -= 1) {
+            let x = choose(matches, i),
+                y = choose(deck.length - matches, maxHandSize - i),
+                z = choose(deck.length, maxHandSize);
+            
+            a += (x * y) / z;
+           }
+         }
+         
+        if (args.length > 1) { // b
+          let ns = [];
+          for (let pairs of args) { // get a list of all the quantities
+            ns.push(pairs[0]);
+           }
+          
+          let ps = permutation(ns); // list of all the cases that have been counted multiple times
+          for (let p of ps) {
+            let x = 1,
+                inDeck = 0,
+                wanted = 0;
+          
+            for (let i = 0; i < p.length; i += 1) {
+              let n = p[i],
+                  cards = args[i][1],
+                  matches = getMatches(cards, n);
+                  
+              x *= choose(matches, n);
+              inDeck += matches;
+              wanted += n;
+             }
+             
+            let y = choose(deck.length - inDeck, maxHandSize - wanted),
+                z = choose(deck.length, maxHandSize);
+              
+            b += (x * y) / z;
+           }
+         }
+        
+        /*
+        put({ // a>0 sometimes, but it seems to work?
+          a: a,
+          b: b,
+          chance: 1 - a + b // a = b when there's only one arg? it shouldn't
+         });*/
+        return 1 - a + b;
+       }
+       
+      function calculateComboChance() {
+        return handChance();
        }
     </script>
     
     <!-- Graphics. -->
     <script>
+      // Highlight land names. I was going to add them all but I came to my senses.
+      function textColor(name) {
+        let red = ['Mountain', 'Leyline of Combustion', 'Leyline of Lightning', 'Leyline of Punishment', 'Castle Embereth', 'Ancient Ampitheater', 'Balduvian Trading Post', 'Barbarian Ring', 'Battlefield Forge', 'Blighted Gorge', 'Aggressive Crag', 'Boros Garrison', 'Boros Guildgate', 'Cinder Glade', 'Clifftop Retreat', 'Contested Cliffs', 'Copperline Gorge', 'Desert of the Fervent', 'Dormant Volcano', 'Dwarven Hold', 'Dwarven Mine', 'Dwarven Ruins', 'Fiery Thicket', 'Flamekin Village', 'Forgotten Cave', 'Fungal Reaches', 'Game Trail', 'Geothermal Crevice', 'Ghitu Encampment', 'Goblin Burrows', 'Great Furnace', 'Grove of the Burnwillows', 'Gruul Guildgate', 'Gruul Turf', 'Hammerhelm', 'Hanweir Battlements', 'Hellion Crucible', 'Highland Weald', 'Inspiring Vantage', 'Jungle Shrine', 'Karplusan Forest', 'Kazandu Refuge', 'Keldon Megaliths', 'Keldon Necropolis', 'Kessig Wolf Run', 'Kher Keep', 'Koskun Keep', 'Looming Spires', 'Madblind Mountain', 'Memorial to War', 'Mercadian Bazaar', 'Metzali, Tower of Triumph', 'Mogg Hollows', 'Mossfire Valley', 'Needle Spires', 'Nomad Outpost', 'Pinecrest Ridge', 'Plateau', 'Raging Ravine', 'Ramunap Ruins', 'Ravage Highlands', 'Rith\'s Grove', 'Rootbound Crag', 'Rugged Highlands', 'Rugged Prairie', 'Sacred Foundry', 'Sandstone Needle', 'Saval Triome', 'Scabland', 'Sheltered Thicket', 'Shinka, the Bloodsoaked Keep', 'Shivan Gorge', 'Shivan Oasis', 'Skarrg, the Rage Pits', 'Slayer\'s Stronghold', 'Smoldering Crater', 'Smoldering Spires', 'Spinerock Knoll', 'Spire Garden', 'Spitfire Bastion', 'Stomping Ground', 'Stone Quarry', 'Sunbaked Canyon', 'Sunhome, Fortress of the Legion', 'Taiga', 'Taiga Stadium', 'Teetering Peaks', 'Temple of Abandon', 'Temple of Triumph', 'Thriving Bluff', 'Timber Gorge', 'Timberline Ridge', 'Tournament Grounds', 'Valakut, the Molten Pinnacle', 'Vivid Crag', 'Wind-Scarred Crag'],
+            blue = ['Island', 'Leyline of Anticipation', 'Leyline of Singularity', 'Yavimaya Coast', 'Caldera Lake', 'Cascade Bluffs', 'Crosis\'s Catacombs', 'Crumbling Necropolis', 'Crypt of the Eternals', 'Desolate Lighthouse', 'Fiery Islet', 'Highland Lake', 'Izzet Boilerworks', 'Izzet Guildgate', 'Mystic Monastery', 'Nivix, Aerie of the Firemind', 'Raugrin Triome', 'Shivan Reef', 'Spirebluff Canal', 'Steam Vents', 'Swiftwater Cliffs', 'Temple of Epiphany', 'Volcanic Island', 'Wandering Fumarole'],
+            green = ['Forest', 'Leyline of Abundance', 'Leyline of Lifeforce', 'Leyline of Vitality', 'Pendelhaven', 'Flooded Grove', 'Frontier Bivouac', 'Ketria Triome', 'Timber Farm'],
+            black = ['Swamp', 'Leyline of the Void', 'Castle Locthwain', 'Phyrexian Tower', 'Akoum Refuge', 'Aunti\'es Hovel', 'Badlands', 'Blackcleave Cliffs', 'Blood Crypt', 'Bloodfell Caves', 'Canyon Slough', 'Castle Sengir', 'Cinder Barrens', 'Cinder Marsh', 'Darigaaz\'s Caldera', 'Dragonskull Summit', 'Foreboding Ruins', 'Graven Cairns', 'Lantern-Lit Graveyard', 'Lava Tubes', 'Lavaclaw Reaches', 'Luxury Suite', 'Molten Slagheap', 'Rakdos Carnarium', 'Rakdos Guildgate', 'Rix Maadi, Dungeon Palace', 'Savage Lands', 'Shadowblood Ridge', 'Smoldering Marsh', 'Stensia Bloodhall', 'Sulfur Vent', 'Sulfurous Springs', 'Tainted Peak', 'Temple of Malice', 'Tresserhorn Sinks', 'Urborg Volcano'],
+            white = ['Plains', 'Leyline of Sanctity', 'Leyline of the Meek', 'Castle Ardenvale', 'Godless Shrine', 'Temple of Silence'],
+            colorless = ['An-Havva Township', 'Crystal Quarry', 'Blighted Woodland'];
+            
+        if (anyEq(name, red)) {
+          return 'red-text';
+         }
+        else if (anyEq(name, blue)) {
+          return 'blue-text';
+         }
+        else if (anyEq(name, green)) {
+          return 'green-text';
+         }
+        else if (anyEq(name, black)) {
+          return 'black-text';
+         }
+        else if (anyEq(name, white)) {
+          return 'white-text';
+         }
+        else if (anyEq(name, colorless)) {
+          return 'white-text';
+         }
+       }
+    
       function displayCard(name) {
         let handContainer = $id('hand-container');
       
         let card = document.createElement('div');
         card.innerHTML = name;
         card.setAttribute('class', 'card');
-        
-        // Highlight land names.
-        if ((['Mountain', 'Castle Embereth'
-                ]).includes(name)) {
-          card.classList.add('red-text');
-         }
-        else if ((['Island', 'Flooded Grove'
-                ]).includes(name)) {
-          card.classList.add('blue-text');
-         }
-        else if ((['Forest', 'Pendelhaven'
-                ]).includes(name)) {
-          card.classList.add('green-text');
-         }
-        else if ((['Swamp', 'Castle Locthwain', 'Phyrexian Tower'
-                ]).includes(name)) {
-          card.classList.add('black-text');
-         }
-        else if ((['Plains', 'Castle Ardenvale', 'Godless Shrine', 'Temple of Silence'
-                ]).includes(name)) {
-          card.classList.add('white-text');
+        card.setAttribute('title', 'Click to place on field, Ctrl-click to remove from game');
+        card.style.cursor = 'pointer';
+
+        let color = textColor(name);
+        if (color) {
+          card.classList.add(color);
          }
         
         handContainer.appendChild(card);
@@ -597,110 +739,87 @@ https://mtgdecks.net/Pauper/mono-blue-control-decklist-by-magister-1993-914017`]
         $id('cards-left').innerHTML = 'Mulligan: Click to remove (' + n + ') cards'
         }
         
-      // Initialize hand odds calculator - set up an example query so users can see how it works.
-      function initHandOddsCalculator(sampleDeckNo) {
-        let slot1No = 1,
-            slot2No = 1,
-            slot1Str = '',
-            slot2Str = '';
-      
-        if (sampleDeckNo == 0) {  // Historic Goblins
-          slot1No = 3;
-          slot1Str = 'Mountain[or]Castle Embereth[or]Phyrexian Tower';
-          
-          slot2No = 2;
-          slot2Str = 'Skirk Prospector[or]Goblin Instigator[or]Wily Goblin[or]Conspicuous Snoop';
-         }
-        else if (sampleDeckNo == 1) { // CLACK BRINGER
-          slot1No = 3;
-          slot1Str = 'Swamp[or]Plains[or]Godless Shrine[or]Temple of Silence';
-          
-          slot2No = 2;
-          slot2Str = 'Foulmire Knight // Profane Insight[or]Hushbringer';
-         }
-        else if (sampleDeckNo == 2) { // Gu Bogles
-          slot1No = 2;
-          slot1Str = 'Forest[or]Pendelhaven[or]Island[or]Flooded Grove';
-          
-          slot2No = 1;
-          slot2Str = 'Slippery Bogle[or]Gladecover Scout';
-         }
-        else if (sampleDeckNo == 3) { // Mono U Control
-          slot1No = 3;
-          slot1Str = 'Island[or]Quicksand';
-          
-          slot2No = 1;
-          slot2Str = 'Delver of Secrets[or]Spire Golem';
-         }
-         
-        $id('slot1No').value = slot1No;
-        $id('slot1Str').value = slot1Str;
-        $id('slot2No').value = slot2No;
-        $id('slot2Str').value = slot2Str;
-         
-        displayOdds();
+      // Set up an example query so users can see how the combo calculator works.
+      function initHandOddsCalculator() {
+        let els = $id('combo-els').children;
+        
+        els[0].value = 2;
+        els[1].value = 'Forest';
+        els[4].value = 1;
+        els[5].value = 'Elvish Mystic[or]Kalonian Tusker';
        }
        
-      function displayOdds() {
+      function displayComboChance() {
         let args = getComboArgs(),
-            chance = calculateOdds(),
-            innerHTML = '<span class="display-odds-large">The chance of drawing</span><br><br>';
-      
-        for (let i = 0; i < args.length; i += 1) {
-          let n = args[i][0],
-              cardsArr = args[i][1],
-              cards = '';
-              
-          // Convert cards to string - toString() would be naive b/c some card names contain commas.
-          for (let c = 0; c < cardsArr.length; c += 1) {
-            let cardName = cardsArr[c];
-          
-            if (c !== 0) {
-              cards += ' or ';
-              }
-          
-            cards += '<strong>' + cardName + '</strong>';
-            }
+            chance = calculateComboChance(),
+            innerHTML = '';
+        
+        if (args.length == 0) {
+          innerHTML += '(There\'s nothing to calculate)';
+         }
+        else {
+          innerHTML += '<span class="display-odds-large">The chance of drawing</span><br><br>';
+        
+          // Convert chance to a percent rounded to the nearest hundredth.
+          chance *= 100;
+          chance = Math.round(chance * 100) / 100;
+        
+          for (let i = 0; i < args.length; i += 1) {
+            let n = args[i][0],
+                cardsArr = args[i][1],
+                cards = '';
+                
+            // Convert cards to string - toString() would be naive b/c some card names contain commas.
+            for (let c = 0; c < cardsArr.length; c += 1) {
+              let cardName = cardsArr[c];
             
-          if (i !== 0) {
-            innerHTML += 'and<br>';
-           }
-             
-          let indent = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;',
-              copies = 'copies';
+              if (c !== 0) {
+                cards += ' or ';
+                }
+            
+              cards += '<strong>' + cardName + '</strong>';
+            }
+            cards += ' (' + getMatches(cardsArr) + ' matches)';
               
-          if (n === '1') { copies = 'copy'; }
-          
-          innerHTML += indent + '<strong>(' + n + ')</strong>' + ' ' + copies + ' of ' + cards + '<br>'
+              
+            let indent = '&nbsp;&nbsp;&nbsp;&nbsp;',
+                copies = 'copies';
+              
+            if (i !== 0) {
+              innerHTML += 'and<br>';
+            }
+                
+            if (n === '1') { copies = 'copy'; }
+            
+            innerHTML += indent + 'at least <strong>(' + n + ')</strong> ' + copies + ' of ' + cards + '<br>'
+          }
+           
+          innerHTML += '<br><span class="display-odds-large">from a starting hand of ' + getComboHandSize() + ' cards<br>';
+          innerHTML += 'is </span><span class="display-odds-chance">' + chance + '%</span>';
          }
          
-        innerHTML += '<br><span class="display-odds-large">from a starting hand of ' + startingHandSize() + ' cards<br>';
-        innerHTML += 'is </span><span class="display-odds-chance">' + chance + '%</span>';
-        
         $id('display-odds').innerHTML = innerHTML;
        }
+       
+      // <button>Calculate Odds</button>
+      $id('calculate-odds').onclick = displayComboChance;
     </script>
     
     <script>
-      // Set random sample deck.
-      let exampleNo = Math.floor(Math.random() * sampleDecks.length),
-          example = sampleDecks[exampleNo];
+      let deckText = $id('deck-text');
       
-      $id('deck-text').innerHTML += example; // set textarea
-      parseDeck();
-      initHandOddsCalculator(exampleNo); // set up hand odds example
+      if (!deckText.value) {
+        deckText.value = sampleDeck;
+      }
+      
+      // Combo calculator example.
+      let addComboEl = $id('add-combo-element').onclick;
+      addComboEl();
+      addComboEl();
+      initHandOddsCalculator();
       
       // Reset counter.
       $id('counter').value = 0;
-      
-      // Shuffle and take a hand.
-      shuffleDeck();
-      draw(startingHandSize());
-      
-      displayHand();
-      updateCardsLeftInDeck();
-      setRemoveFromHandTrigger();
-      clearBoard();
     </script>
   </body>
 </html>
